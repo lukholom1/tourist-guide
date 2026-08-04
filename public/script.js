@@ -1,4 +1,4 @@
-const API_URL = '/api/destinations';
+const API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/destinations';
 const PIN_STORAGE_KEY = 'waypoint:pinned';
 
 let currentCategory = 'all';

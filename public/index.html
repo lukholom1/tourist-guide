@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waypoint — Tourist Guide</title>
+  <meta name="description" content="Discover, save, and pin the world's best destinations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-blob blob-blue" aria-hidden="true"></div>
+    <div class="hero-blob blob-coral" aria-hidden="true"></div>
+    <svg class="flight-path" viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,45 C150,10 250,55 320,25 C400,-8 480,35 600,15" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="1 9" stroke-linecap="round"/>
+      <circle class="plane" r="4" fill="#ffffff"><animateMotion dur="9s" repeatCount="indefinite" path="M0,45 C150,10 250,55 320,25 C400,-8 480,35 600,15"/></circle>
+    </svg>
+    <div class="hero-inner">
+      <p class="eyebrow">Your next trip starts here</p>
+      <h1>Waypoint</h1>
+      <p class="tagline">Discover amazing places to visit — and pin the ones you won't forget.</p>
+      <div class="search-container">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="search-input" type="search" placeholder="Search destinations, cities, cuisines…" aria-label="Search destinations" />
+      </div>
+    </div>
+  </header>
+
+  <div class="stats-strip" id="stats-strip" aria-hidden="true">
+    <div class="stat"><span class="stat-number" id="stat-total">0</span><span class="stat-label">Destinations</span></div>
+    <div class="stat"><span class="stat-number" id="stat-places">0</span><span class="stat-label">Places on the map</span></div>
+    <div class="stat"><span class="stat-number" id="stat-rating">0</span><span class="stat-label">Avg. rating</span></div>
+    <div class="stat"><span class="stat-number" id="stat-pinned">0</span><span class="stat-label">Pinned by you</span></div>
+  </div>
+
+  <nav class="filter-bar" aria-label="Destination filters">
+    <div class="filters" id="category-filters">
+      <button class="filter-btn active" data-category="all">All</button>
+      <button class="filter-btn" data-category="food">🍜 Food</button>
+      <button class="filter-btn" data-category="sightseeing">🏛️ Sightseeing</button>
+      <button class="filter-btn" data-category="nightlife">🌙 Nightlife</button>
+    </div>
+    <div class="filter-bar-actions">
+      <button class="filter-btn surprise-btn" id="surprise-btn" type="button">🎲 Surprise me</button>
+      <button class="filter-btn pinned-toggle" id="pinned-toggle" aria-pressed="false">
+        <span class="pin-glyph">📍</span> Pinned <span class="pinned-count" id="pinned-count">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="destinations" id="destinations" aria-live="polite"></section>
+
+    <section class="add-form">
+      <h2>Add a Destination</h2>
+      <p class="form-subtitle">Know somewhere worth the detour? Add it to the guide.</p>
+      <form id="add-destination-form">
+        <input type="text" name="name" placeholder="Destination name" required>
+        <input type="text" name="location" placeholder="Location (city, country)" required>
+        <select name="category" required>
+          <option value="">Select category</option>
+          <option value="food">Food</option>
+          <option value="sightseeing">Sightseeing</option>
+          <option value="nightlife">Nightlife</option>
+        </select>
+        <textarea name="description" placeholder="What makes it worth visiting?" required></textarea>
+        <label class="rating-label">
+          Rating
+          <input type="number" name="rating" min="1" max="5" placeholder="1–5" required>
+        </label>
+        <button type="submit">Add Destination</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Waypoint · Built for wanderers · Pins are saved on this device</p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="confetti-layer" id="confetti-layer" aria-hidden="true"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 const API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/destinations';
+const WEATHER_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/weather';
 const PIN_STORAGE_KEY = 'waypoint:pinned';
 
 let currentCategory = 'all';
@@ -74,13 +75,16 @@ function animateCount(el, target, decimals = 0) {
       el.dataset.value = target;
     }
   }
+
   requestAnimationFrame(tick);
 }
 
 function updateStats(destinations) {
   if (!statTotalEl) return;
+
   const total = destinations.length;
   const uniquePlaces = new Set(destinations.map((d) => d.location)).size;
+
   const avgRating = total
     ? destinations.reduce((sum, d) => sum + (d.rating || 0), 0) / total
     : 0;
@@ -95,33 +99,133 @@ const CONFETTI_COLORS = ['#e3663f', '#2e6fa8', '#4fa3e3', '#c1912e', '#564a8a'];
 
 function burstConfetti(originEl) {
   if (!confettiLayer || !originEl) return;
+
   const rect = originEl.getBoundingClientRect();
   const originX = rect.left + rect.width / 2;
   const originY = rect.top + rect.height / 2;
 
   for (let i = 0; i < 14; i += 1) {
     const piece = document.createElement('span');
+
     piece.className = 'confetti-piece';
     piece.style.left = `${originX + (Math.random() * 40 - 20)}px`;
     piece.style.top = `${originY}px`;
     piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
     piece.style.transform = `rotate(${Math.random() * 360}deg)`;
     piece.style.animationDuration = `${0.7 + Math.random() * 0.5}s`;
+
     confettiLayer.appendChild(piece);
+
     setTimeout(() => piece.remove(), 1300);
   }
+}
+
+// ---------- Weather ----------
+
+async function getWeather(location) {
+  try {
+    const response = await fetch(
+      `${WEATHER_API_URL}?location=${encodeURIComponent(location)}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Weather unavailable');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Weather error for ${location}:`, error);
+    return null;
+  }
+}
+
+function weatherIcon(iconCode) {
+  if (!iconCode) return '🌤️';
+
+  const icons = {
+    '01d': '☀️',
+    '01n': '🌙',
+    '02d': '🌤️',
+    '02n': '🌙',
+    '03d': '☁️',
+    '03n': '☁️',
+    '04d': '☁️',
+    '04n': '☁️',
+    '09d': '🌧️',
+    '09n': '🌧️',
+    '10d': '🌦️',
+    '10n': '🌧️',
+    '11d': '⛈️',
+    '11n': '⛈️',
+    '13d': '❄️',
+    '13n': '❄️',
+    '50d': '🌫️',
+    '50n': '🌫️'
+  };
+
+  return icons[iconCode] || '🌤️';
+}
+
+async function loadWeatherForCards(destinations) {
+  const weatherResults = await Promise.all(
+    destinations.map(async (dest) => {
+      const weather = await getWeather(dest.location);
+
+      return {
+        id: dest._id,
+        weather
+      };
+    })
+  );
+
+  weatherResults.forEach(({ id, weather }) => {
+    const card = destinationsContainer.querySelector(
+      `.destination-card[data-id="${id}"]`
+    );
+
+    if (!card) return;
+
+    const weatherElement = card.querySelector('.weather');
+
+    if (!weatherElement) return;
+
+    if (!weather) {
+      weatherElement.innerHTML = `
+        <span class="weather-unavailable">
+          🌤️ Weather unavailable
+        </span>
+      `;
+      return;
+    }
+
+    weatherElement.innerHTML = `
+      <div class="weather-main">
+        <span class="weather-icon">${weatherIcon(weather.icon)}</span>
+        <span class="weather-temperature">${weather.temperature}°C</span>
+        <span class="weather-description">${weather.description}</span>
+      </div>
+      <div class="weather-details">
+        <span>Feels like ${weather.feelsLike}°C</span>
+        <span>💧 ${weather.humidity}%</span>
+        <span>💨 ${weather.windSpeed} m/s</span>
+      </div>
+    `;
+  });
 }
 
 // ---------- Data loading ----------
 
 function buildQueryString() {
   const params = new URLSearchParams();
+
   if (currentCategory && currentCategory !== 'all') {
     params.set('category', currentCategory);
   }
+
   if (currentSearch.trim()) {
     params.set('search', currentSearch.trim());
   }
+
   return params.toString();
 }
 
@@ -129,12 +233,17 @@ async function loadDestinations() {
   try {
     const query = buildQueryString();
     const url = query ? `${API_URL}?${query}` : API_URL;
+
     const response = await fetch(url);
+
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }
+
     latestDestinations = await response.json();
+
     renderDestinations();
+
     if (currentCategory === 'all' && !currentSearch.trim()) {
       updateStats(latestDestinations);
     }
@@ -149,6 +258,7 @@ async function loadDestinations() {
 
 function renderDestinations() {
   const pinned = getPinnedIds();
+
   const list = showPinnedOnly
     ? latestDestinations.filter((dest) => pinned.has(dest._id))
     : latestDestinations;
@@ -157,13 +267,18 @@ function renderDestinations() {
     destinationsContainer.innerHTML = showPinnedOnly
       ? `<div class="empty-state"><strong>No pinned destinations yet</strong><span>Tap the pin icon on a card to save it here.</span></div>`
       : `<div class="empty-state"><strong>No destinations found</strong><span>Try a different search or add one below.</span></div>`;
+
     return;
   }
 
   destinationsContainer.innerHTML = list.map((dest) => {
     const stars = '★'.repeat(dest.rating) + '☆'.repeat(5 - dest.rating);
     const isPinned = pinned.has(dest._id);
-    const mapQuery = encodeURIComponent(`${dest.name}, ${dest.location}`);
+
+    const mapQuery = encodeURIComponent(
+      `${dest.name}, ${dest.location}`
+    );
+
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
     return `
@@ -173,6 +288,7 @@ function renderDestinations() {
             <h3>${dest.name}</h3>
             <span class="category ${dest.category}">${dest.category}</span>
           </div>
+
           <button
             class="pin-btn${isPinned ? ' pinned' : ''}"
             type="button"
@@ -182,21 +298,39 @@ function renderDestinations() {
             title="${isPinned ? 'Unpin this destination' : 'Pin this destination'}"
           >📍</button>
         </div>
+
         <p class="location">📌 ${dest.location}</p>
+
         <p class="description">${dest.description}</p>
+
+        <div class="weather">
+          <span class="weather-loading">
+            🌤️ Loading weather...
+          </span>
+        </div>
+
         <div class="card-bottom">
           <p class="rating">${stars}</p>
-          <a class="map-link" href="${mapUrl}" target="_blank" rel="noopener noreferrer">View on map ↗</a>
+          <a
+            class="map-link"
+            href="${mapUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >View on map ↗</a>
         </div>
       </div>
     `;
   }).join('');
+
+  // Fetch weather after the cards have been rendered
+  loadWeatherForCards(list);
 }
 
 // ---------- Event wiring ----------
 
 destinationsContainer.addEventListener('click', (event) => {
   const btn = event.target.closest('.pin-btn');
+
   if (!btn) return;
 
   const id = btn.dataset.id;
@@ -206,17 +340,23 @@ destinationsContainer.addEventListener('click', (event) => {
   btn.classList.toggle('pinned', isNowPinned);
   btn.classList.add('pop');
   btn.setAttribute('aria-pressed', String(isNowPinned));
+
   setTimeout(() => btn.classList.remove('pop'), 400);
 
   if (dest) {
-    showToast(isNowPinned ? `Pinned ${dest.name}` : `Removed ${dest.name} from pins`);
+    showToast(
+      isNowPinned
+        ? `Pinned ${dest.name}`
+        : `Removed ${dest.name} from pins`
+    );
   }
 
   if (isNowPinned) {
     burstConfetti(btn);
   }
 
-  btn.closest('.destination-card')?.classList.toggle('is-pinned', isNowPinned);
+  btn.closest('.destination-card')
+    ?.classList.toggle('is-pinned', isNowPinned);
 
   if (showPinnedOnly && !isNowPinned) {
     renderDestinations();
@@ -225,8 +365,13 @@ destinationsContainer.addEventListener('click', (event) => {
 
 pinnedToggle.addEventListener('click', () => {
   showPinnedOnly = !showPinnedOnly;
+
   pinnedToggle.classList.toggle('active', showPinnedOnly);
-  pinnedToggle.setAttribute('aria-pressed', String(showPinnedOnly));
+  pinnedToggle.setAttribute(
+    'aria-pressed',
+    String(showPinnedOnly)
+  );
+
   renderDestinations();
 });
 
@@ -241,18 +386,36 @@ surpriseBtn?.addEventListener('click', () => {
   }
 
   surpriseBtn.classList.add('rolling');
-  setTimeout(() => surpriseBtn.classList.remove('rolling'), 500);
+
+  setTimeout(
+    () => surpriseBtn.classList.remove('rolling'),
+    500
+  );
 
   const pick = pool[Math.floor(Math.random() * pool.length)];
-  const card = destinationsContainer.querySelector(`.destination-card[data-id="${pick._id}"]`);
+
+  const card = destinationsContainer.querySelector(
+    `.destination-card[data-id="${pick._id}"]`
+  );
+
   if (card) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
     card.classList.remove('is-highlighted');
-    // Restart the animation even if it was just played
+
     void card.offsetWidth;
+
     card.classList.add('is-highlighted');
-    setTimeout(() => card.classList.remove('is-highlighted'), 1500);
+
+    setTimeout(
+      () => card.classList.remove('is-highlighted'),
+      1500
+    );
   }
+
   showToast(`How about ${pick.name}?`);
 });
 
@@ -266,34 +429,51 @@ searchInput?.addEventListener('input', (event) => {
 filterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     currentCategory = button.dataset.category || 'all';
-    filterButtons.forEach((btn) => btn.classList.remove('active'));
+
+    filterButtons.forEach((btn) =>
+      btn.classList.remove('active')
+    );
+
     button.classList.add('active');
+
     loadDestinations();
   });
 });
 
 // Add-destination form
-document.getElementById('add-destination-form')?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const form = event.target;
-  const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
-  payload.rating = Number(payload.rating);
+document
+  .getElementById('add-destination-form')
+  ?.addEventListener('submit', async (event) => {
+    event.preventDefault();
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error('Failed to save destination');
-    form.reset();
-    showToast(`Added ${payload.name} to the guide`);
-    await loadDestinations();
-  } catch (error) {
-    showToast(error.message);
-  }
-});
+    const form = event.target;
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    payload.rating = Number(payload.rating);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save destination');
+      }
+
+      form.reset();
+
+      showToast(`Added ${payload.name} to the guide`);
+
+      await loadDestinations();
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
 
 // Initial load when the page opens
 updatePinnedCount();

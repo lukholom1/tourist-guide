@@ -696,3 +696,76 @@ main {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+/* ---------- Weather ---------- */
+
+.weather {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(46, 111, 168, 0.08);
+  border: 1px solid rgba(46, 111, 168, 0.15);
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+}
+
+.weather-loading,
+.weather-unavailable {
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.weather-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.weather-temperature {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.weather-description {
+  text-transform: capitalize;
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: 4px;
+}
+
+.weather-details {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #777;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .weather {
+    padding: 12px;
+  }
+
+  .weather-main {
+    flex-wrap: wrap;
+  }
+
+  .weather-details {
+    width: 100%;
+    margin-left: 0;
+    padding-left: 42px;
+  }
+
+  .weather-description {
+    width: 100%;
+    margin-left: 42px;
+    margin-top: -4px;
+  }
+}

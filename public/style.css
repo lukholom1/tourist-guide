@@ -769,3 +769,49 @@ gap: 0.5rem 0.75rem;
 padding-left: 0;
 }
 }
+/* ---------- Voting ---------- */
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.vote-btn:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue-dark);
+  transform: translateY(-1px);
+}
+
+.vote-btn.voted {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue-dark);
+  cursor: default;
+}
+
+.vote-btn.voting {
+  transform: scale(1.08);
+}
+
+.vote-count {
+  min-width: 1rem;
+  text-align: center;
+}

@@ -92,6 +92,47 @@ app.post('/api/destinations', async (req, res) => {
   }
 });
 
+// Get current weather for a destination
+app.get('/api/weather', async (req, res) => {
+  try {
+    const { location } = req.query;
+
+    if (!location) {
+      return res.status(400).json({
+        message: 'Location is required'
+      });
+    }
+
+    const weatherResponse = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`
+    );
+
+    if (!weatherResponse.ok) {
+      return res.status(weatherResponse.status).json({
+        message: 'Failed to fetch weather'
+      });
+    }
+
+    const weather = await weatherResponse.json();
+
+    res.json({
+      location: weather.name,
+      temperature: Math.round(weather.main.temp),
+      feelsLike: Math.round(weather.main.feels_like),
+      description: weather.weather[0].description,
+      icon: weather.weather[0].icon,
+      humidity: weather.main.humidity,
+      windSpeed: weather.wind.speed
+    });
+
+  } catch (error) {
+    console.error('Weather API error:', error);
+    res.status(500).json({
+      message: 'Failed to load weather'
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Tourist Guide server running at http://localhost:${PORT}`);

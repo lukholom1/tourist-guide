@@ -511,11 +511,15 @@ main {
   justify-content: space-between;
   padding-top: 0.85rem;
   border-top: 1px dashed var(--line);
+  margin-top: auto;
 }
 
 .destination-card .rating {
   color: var(--gold);
   letter-spacing: 0.05em;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .map-link {
@@ -823,18 +827,18 @@ padding-left: 0;
   aspect-ratio: 16 / 9;
 }
 
-.destination-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.image-container {
+    width: 100%;
+    height: 200px;          /* All cards get the same image height */
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: #f2f2f2;
 }
 
-.image-loading {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #777;
-  font-size: 0.9rem;
+.destination-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* Crops instead of stretching */
+    display: block;
 }

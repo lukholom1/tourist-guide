@@ -462,7 +462,14 @@ function renderDestinations() {
           class="destination-card${isPinned ? ' is-pinned' : ''}"
           data-id="${dest._id}"
         >
-
+        <div class="image-container">
+        <img
+          class="destination-image"
+          src=""
+          alt="Loading..."
+          loading="lazy"
+          >
+        </div>
           <div class="card-top">
 
             <div>
@@ -541,6 +548,7 @@ function renderDestinations() {
 
   // Fetch weather after the cards have been rendered
   loadWeatherForCards(list);
+  loadImagesForCards(list);
 }
 
 // ---------- Event wiring ----------

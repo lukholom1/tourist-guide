@@ -329,6 +329,46 @@ async function getDestinationImage(query) {
   }
 }
 // ---------- Data loading ----------
+// ---------- Load images into destination cards ----------
+async function loadImagesForCards(destinations) {
+
+  const results = await Promise.all(
+    destinations.map(async (dest) => {
+
+      const image = await getDestinationImage(
+        `${dest.name} ${dest.location}`
+      );
+
+      return {
+        id: dest._id,
+        image
+      };
+    })
+  );
+
+  results.forEach(({ id, image }) => {
+
+    const card = destinationsContainer.querySelector(
+      `.destination-card[data-id="${id}"]`
+    );
+
+    if (!card) return;
+
+    const img = card.querySelector(".destination-image");
+
+    if (!img) return;
+
+    if (image && image.image) {
+      img.src = image.image;
+      img.alt = image.photographer || "Destination";
+    } else {
+      img.src = "https://via.placeholder.com/600x350?text=No+Image";
+      img.alt = "No image available";
+    }
+
+  });
+
+}
 
 function buildQueryString() {
   const params = new URLSearchParams();

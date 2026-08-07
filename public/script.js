@@ -1,5 +1,6 @@
 const API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/destinations';
 const WEATHER_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/weather';
+const IMAGE_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/image';
 const PIN_STORAGE_KEY = 'waypoint:pinned';
 const VOTE_STORAGE_KEY = 'waypoint:voted';
 
@@ -309,7 +310,24 @@ async function loadWeatherForCards(destinations) {
     `;
   });
 }
+// ---------- Load Images of Destination ----------
+async function getDestinationImage(query) {
+  try {
+    const response = await fetch(
+      `${IMAGE_API_URL}?query=${encodeURIComponent(query)}`
+    );
 
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
 // ---------- Data loading ----------
 
 function buildQueryString() {

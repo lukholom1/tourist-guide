@@ -209,7 +209,54 @@ app.get('/api/weather', async (req, res) => {
     });
   }
 });
+// Get an image for a destination
+app.get('/api/image', async (req, res) => {
+  try {
+    const { query } = req.query;
 
+    if (!query) {
+      return res.status(400).json({
+        message: 'Query is required'
+      });
+    }
+
+    const response = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`,
+      {
+        headers: {
+          Authorization: process.env.PEXELS_API_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        message: 'Failed to fetch image'
+      });
+    }
+
+    const data = await response.json();
+
+    if (!data.photos || data.photos.length === 0) {
+      return res.json({
+        image: null
+      });
+    }
+
+    res.json({
+      image: data.photos[0].src.large,
+      photographer: data.photos[0].photographer,
+      photographerUrl: data.photos[0].photographer_url
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: 'Failed to load image'
+    });
+  }
+});
 // Start the server
 app.listen(PORT, () => {
   console.log(`Tourist Guide server running at http://localhost:${PORT}`);

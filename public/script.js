@@ -1,7 +1,8 @@
 const API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/destinations';
 const WEATHER_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/weather';
 const IMAGE_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/image';
-const PLACES_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/geoapify/places';
+const GEOAPIFY_API_URL = 'https://tourist-guide-api-hta5.onrender.com/api/geoapify/places';
+
 const PIN_STORAGE_KEY = 'waypoint:pinned';
 const VOTE_STORAGE_KEY = 'waypoint:voted';
 

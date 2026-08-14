@@ -968,3 +968,4 @@ document
 // Initial load when the page opens
 updatePinnedCount();
 loadDestinations();
+getGeoapifyPlaces();

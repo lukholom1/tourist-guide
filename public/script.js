@@ -329,6 +329,27 @@ async function getDestinationImage(query) {
     return null;
   }
 }
+async function getGeoapifyPlaces() {
+  try {
+    const response = await fetch(
+      `${GEOAPIFY_API_URL}?lat=-33.9608&lon=25.6022`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to load nearby places');
+    }
+
+    const data = await response.json();
+
+    console.log('Geoapify places:', data);
+
+    return data.features || [];
+
+  } catch (error) {
+    console.error('Geoapify error:', error);
+    return [];
+  }
+}
 // ---------- Data loading ----------
 // ---------- Load images into destination cards ----------
 async function loadImagesForCards(destinations) {

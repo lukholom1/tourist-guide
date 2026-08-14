@@ -353,6 +353,35 @@ async function getGeoapifyPlaces() {
   }
 }
 
+function convertGeoapifyPlace(feature) {
+  const properties = feature.properties || {};
+
+  return {
+    _id: `geo-${properties.place_id || `${properties.lat}-${properties.lon}`}`,
+    name: properties.name || properties.address_line1 || 'Unknown place',
+
+    description:
+      properties.formatted ||
+      'A place found through Geoapify.',
+
+    category:
+      properties.category === 'tourism.attraction'
+        ? 'sightseeing'
+        : 'sightseeing',
+
+    location:
+      properties.city && properties.country
+        ? `${properties.city}, ${properties.country}`
+        : properties.formatted || 'Unknown location',
+
+    rating: 0,
+    votes: 0,
+
+    lat: properties.lat,
+    lon: properties.lon
+  };
+}
+
 async function searchGeoapifyPlaces(search) {
   try {
     destinationsContainer.innerHTML = `
@@ -372,8 +401,6 @@ async function searchGeoapifyPlaces(search) {
 
     const data = await response.json();
 
-    console.log('Geoapify search results:', data);
-
     const places = data.features || [];
 
     if (places.length === 0) {
@@ -387,7 +414,12 @@ async function searchGeoapifyPlaces(search) {
       return;
     }
 
-    console.log('Places found:', places);
+    const geoDestinations =
+      places.map(convertGeoapifyPlace);
+
+    latestDestinations = geoDestinations;
+
+    renderDestinations();
 
   } catch (error) {
     console.error(
@@ -395,6 +427,14 @@ async function searchGeoapifyPlaces(search) {
       error
     );
 
+    destinationsContainer.innerHTML = `
+      <div class="empty-state">
+        <strong>Search failed</strong>
+        <span>${error.message}</span>
+      </div>
+    `;
+  }
+}
     destinationsContainer.innerHTML = `
       <div class="empty-state">
         <strong>Search failed</strong>

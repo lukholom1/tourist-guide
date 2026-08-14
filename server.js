@@ -92,6 +92,47 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
+// Test Geoapify Places API
+app.get('/api/geoapify/places', async (req, res) => {
+  try {
+    const {
+      lat = '-33.9608',
+      lon = '25.6022'
+    } = req.query;
+    const radius = 5000;
+    const categories =
+      'tourism.sights,tourism.attraction,tourism.museum';
+    const url =
+      `https://api.geoapify.com/v2/places` +
+      `?categories=${encodeURIComponent(categories)}` +
+      `&filter=circle:${lon},${lat},${radius}` +
+      `&limit=20` +
+      `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        'Geoapify error:',
+        response.status,
+        errorText
+      );
+      return res.status(response.status).json({
+        message: 'Geoapify request failed'
+      });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error(
+      'Geoapify API error:',
+      error
+    );
+    res.status(500).json({
+      message: 'Failed to load places from Geoapify'
+    });
+  }
+});
+
 // Return destinations, optionally filtered by category and/or search term
 app.get('/api/destinations', async (req, res) => {
   try {

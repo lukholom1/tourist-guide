@@ -331,6 +331,8 @@ async function getDestinationImage(query) {
   }
 }
 
+// ---------- Geoapify Places ----------
+
 async function getGeoapifyPlaces() {
   try {
     const response = await fetch(
@@ -353,12 +355,20 @@ async function getGeoapifyPlaces() {
   }
 }
 
+
+// ---------- Convert Geoapify place to destination ----------
+
 function convertGeoapifyPlace(feature) {
   const properties = feature.properties || {};
 
   return {
-    _id: `geo-${properties.place_id || `${properties.lat}-${properties.lon}`}`,
-    name: properties.name || properties.address_line1 || 'Unknown place',
+    _id:
+      `geo-${properties.place_id || `${properties.lat}-${properties.lon}`}`,
+
+    name:
+      properties.name ||
+      properties.address_line1 ||
+      'Unknown place',
 
     description:
       properties.formatted ||
@@ -375,12 +385,17 @@ function convertGeoapifyPlace(feature) {
         : properties.formatted || 'Unknown location',
 
     rating: 0,
+
     votes: 0,
 
     lat: properties.lat,
+
     lon: properties.lon
   };
 }
+
+
+// ---------- Search Geoapify places ----------
 
 async function searchGeoapifyPlaces(search) {
   try {
@@ -427,14 +442,6 @@ async function searchGeoapifyPlaces(search) {
       error
     );
 
-    destinationsContainer.innerHTML = `
-      <div class="empty-state">
-        <strong>Search failed</strong>
-        <span>${error.message}</span>
-      </div>
-    `;
-  }
-}
     destinationsContainer.innerHTML = `
       <div class="empty-state">
         <strong>Search failed</strong>

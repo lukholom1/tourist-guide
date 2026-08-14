@@ -110,16 +110,20 @@ app.get('/api/geoapify/places', async (req, res) => {
       `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
     const response = await fetch(url);
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        'Geoapify error:',
-        response.status,
-        errorText
-      );
-      return res.status(response.status).json({
-        message: 'Geoapify request failed'
-      });
-    }
+  const errorText = await response.text();
+
+  console.error(
+    'Geoapify error:',
+    response.status,
+    errorText
+  );
+
+  return res.status(response.status).json({
+    message: 'Geoapify request failed',
+    status: response.status,
+    details: errorText
+  });
+}
     const data = await response.json();
     res.json(data);
   } catch (error) {

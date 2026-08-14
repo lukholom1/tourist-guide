@@ -92,45 +92,67 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Test Geoapify Places API
+//geof
 app.get('/api/geoapify/places', async (req, res) => {
   try {
     const {
       lat = '-33.9608',
-      lon = '25.6022'
+      lon = '25.6022',
+      search
     } = req.query;
+
     const radius = 5000;
-    const categories =
-  'tourism.sights,tourism.attraction';
-    const url =
-      `https://api.geoapify.com/v2/places` +
-      `?categories=${encodeURIComponent(categories)}` +
-      `&filter=circle:${lon},${lat},${radius}` +
-      `&limit=20` +
-      `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+
+    let url;
+
+    if (search && search.trim()) {
+      // Search for a specific place
+      url =
+        `https://api.geoapify.com/v1/geocode/search` +
+        `?text=${encodeURIComponent(search.trim())}` +
+        `&limit=20` +
+        `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+    } else {
+      // Default nearby tourist places
+      const categories =
+        'tourism.sights,tourism.attraction';
+
+      url =
+        `https://api.geoapify.com/v2/places` +
+        `?categories=${encodeURIComponent(categories)}` +
+        `&filter=circle:${lon},${lat},${radius}` +
+        `&limit=20` +
+        `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+    }
+
     const response = await fetch(url);
+
     if (!response.ok) {
-  const errorText = await response.text();
+      const errorText = await response.text();
 
-  console.error(
-    'Geoapify error:',
-    response.status,
-    errorText
-  );
+      console.error(
+        'Geoapify error:',
+        response.status,
+        errorText
+      );
 
-  return res.status(response.status).json({
-    message: 'Geoapify request failed',
-    status: response.status,
-    details: errorText
-  });
-}
+      return res.status(response.status).json({
+        message: 'Geoapify request failed',
+        status: response.status,
+        details: errorText
+      });
+    }
+
     const data = await response.json();
+
     res.json(data);
+
   } catch (error) {
     console.error(
       'Geoapify API error:',
       error
     );
+
     res.status(500).json({
       message: 'Failed to load places from Geoapify'
     });

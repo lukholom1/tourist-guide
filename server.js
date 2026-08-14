@@ -101,7 +101,7 @@ app.get('/api/geoapify/places', async (req, res) => {
     } = req.query;
     const radius = 5000;
     const categories =
-      'tourism.sights,tourism.attraction,tourism.museum';
+  'tourism.sights,tourism.attraction';
     const url =
       `https://api.geoapify.com/v2/places` +
       `?categories=${encodeURIComponent(categories)}` +

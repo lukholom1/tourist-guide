@@ -330,6 +330,7 @@ async function getDestinationImage(query) {
     return null;
   }
 }
+
 async function getGeoapifyPlaces() {
   try {
     const response = await fetch(
@@ -349,6 +350,57 @@ async function getGeoapifyPlaces() {
   } catch (error) {
     console.error('Geoapify error:', error);
     return [];
+  }
+}
+
+async function searchGeoapifyPlaces(search) {
+  try {
+    destinationsContainer.innerHTML = `
+      <div class="empty-state">
+        <strong>Searching...</strong>
+        <span>Looking for "${search}"</span>
+      </div>
+    `;
+
+    const response = await fetch(
+      `${GEOAPIFY_API_URL}?search=${encodeURIComponent(search)}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to search places');
+    }
+
+    const data = await response.json();
+
+    console.log('Geoapify search results:', data);
+
+    const places = data.features || [];
+
+    if (places.length === 0) {
+      destinationsContainer.innerHTML = `
+        <div class="empty-state">
+          <strong>No places found</strong>
+          <span>Try another search.</span>
+        </div>
+      `;
+
+      return;
+    }
+
+    console.log('Places found:', places);
+
+  } catch (error) {
+    console.error(
+      'Geoapify search error:',
+      error
+    );
+
+    destinationsContainer.innerHTML = `
+      <div class="empty-state">
+        <strong>Search failed</strong>
+        <span>${error.message}</span>
+      </div>
+    `;
   }
 }
 // ---------- Data loading ----------
@@ -863,13 +915,24 @@ surpriseBtn?.addEventListener(
 
 // Fire a search request on every keystroke
 searchInput?.addEventListener(
-  'input',
+  'keydown',
   (event) => {
 
-    currentSearch =
-      event.target.value;
+    if (event.key !== 'Enter') {
+      return;
+    }
 
-    loadDestinations();
+    event.preventDefault();
+
+    currentSearch =
+      event.target.value.trim();
+
+    if (!currentSearch) {
+      loadDestinations();
+      return;
+    }
+
+    searchGeoapifyPlaces(currentSearch);
   }
 );
 

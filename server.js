@@ -124,15 +124,15 @@ app.get('/api/geoapify/places', async (req, res) => {
         'catering.restaurant,' +
         'catering.cafe,' +
         'catering.fast_food,' +
-        'catering.food_court,' +
-        'commercial.food';
+        'catering.food_court';
 
     } else if (category === 'nightlife') {
 
       categories =
         'adult.nightclub,' +
         'adult.casino,' +
-        'entertainment.nightclub';
+        'catering.bar,' +
+        'catering.pub';
 
     } else if (category === 'sightseeing') {
 

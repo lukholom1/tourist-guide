@@ -204,6 +204,49 @@ app.get('/api/geoapify/places', async (req, res) => {
       const [searchLon, searchLat] =
         match.geometry.coordinates;
 
+      // When no specific category tab is selected,
+      // search across all relevant place types —
+      // a named search like "Tiger's Milk" could be
+      // a restaurant, bar, or attraction, and we
+      // don't want to only look at tourism.sights.
+      const searchCategories =
+        category === 'all'
+          ? 'catering,adult,tourism,entertainment'
+          : categories;
+
+      // ---- Attempt 1: named place match ----
+      // e.g. "Tiger's Milk" is a specific business,
+      // not a city — try to match it by name first.
+
+      const namedUrl =
+        `https://api.geoapify.com/v2/places` +
+        `?categories=${encodeURIComponent(searchCategories)}` +
+        `&name=${encodeURIComponent(search)}` +
+        `&filter=circle:${searchLon},${searchLat},${radius}` +
+        `&limit=${encodeURIComponent(limit)}` +
+        `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+
+      const namedResponse =
+        await fetch(namedUrl);
+
+      if (namedResponse.ok) {
+
+        const namedData =
+          await namedResponse.json();
+
+        if (
+          namedData.features &&
+          namedData.features.length > 0
+        ) {
+          return res.json(namedData);
+        }
+      }
+
+      // ---- Attempt 2: browse the area ----
+      // No named match — the search term was
+      // probably a place/city (e.g. "London"),
+      // so fall back to attractions nearby.
+
       const placesUrl =
         `https://api.geoapify.com/v2/places` +
         `?categories=${encodeURIComponent(categories)}` +

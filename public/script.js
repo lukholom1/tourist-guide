@@ -1018,34 +1018,24 @@ surpriseBtn?.addEventListener(
 searchInput?.addEventListener(
   'input',
   (event) => {
-
     currentSearch =
       event.target.value.trim();
-
     const searchTerm =
       currentSearch.toLowerCase();
-
     // Empty search = restore database results
     if (!searchTerm) {
-
       latestDestinations =
         databaseDestinations;
-
       renderDestinations();
-
       return;
     }
-
     // Search the existing MongoDB results
     const filteredDestinations =
       databaseDestinations.filter((dest) => {
-
         const name =
           (dest.name || '').toLowerCase();
-
         const location =
           (dest.location || '').toLowerCase();
-
         const description =
           (dest.description || '').toLowerCase();
 
@@ -1055,7 +1045,6 @@ searchInput?.addEventListener(
           description.includes(searchTerm)
         );
       });
-
     // Display the filtered local results
     latestDestinations =
       filteredDestinations;
@@ -1063,26 +1052,20 @@ searchInput?.addEventListener(
     renderDestinations();
   }
 );
-
-
 // Press ENTER to search Geoapify
 searchInput?.addEventListener(
   'keydown',
   (event) => {
-
     if (event.key !== 'Enter') {
       return;
     }
-
     event.preventDefault();
 
     const search =
       searchInput.value.trim();
-
     if (!search) {
       return;
     }
-
     searchGeoapifyPlaces(
       search,
       currentCategory
@@ -1103,15 +1086,26 @@ filterButtons.forEach(
 
         filterButtons.forEach(
           (btn) =>
-            btn.classList.remove(
-              'active'
-            )
+            btn.classList.remove('active')
         );
 
-        button.classList.add(
-          'active'
-        );
+        button.classList.add('active');
 
+        // If the user has already performed an
+        // API search, apply the category to that search.
+        if (
+          apiSearchActive &&
+          currentSearch.trim()
+        ) {
+          searchGeoapifyPlaces(
+            currentSearch.trim(),
+            currentCategory
+          );
+
+          return;
+        }
+
+        // Otherwise use the normal database filter.
         loadDestinations();
       }
     );

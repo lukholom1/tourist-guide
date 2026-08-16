@@ -160,33 +160,146 @@ app.get('/api/geoapify/places', async (req, res) => {
 });
 
 // Return destinations, optionally filtered by category and/or search term
-app.get('/api/destinations', async (req, res) => {
+// ---------- Geoapify Places Search ----------
+
+app.get('/api/geoapify/places', async (req, res) => {
+
   try {
-    const { category, search } = req.query;
-    const query = {};
 
-    if (category && category !== 'All') {
-      query.category = category;
+    const {
+      search,
+      lat = '-33.9608',
+      lon = '25.6022',
+      category = 'all',
+      limit = '10'
+    } = req.query;
+
+    const radius = 5000;
+
+    let categories =
+      'tourism.sights,tourism.attraction';
+
+    // Category mapping
+    if (category === 'food') {
+
+      categories =
+        'catering.restaurant,' +
+        'catering.cafe,' +
+        'catering.fast_food,' +
+        'catering.food_court,' +
+        'commercial.food';
+
+    } else if (category === 'nightlife') {
+
+      categories =
+        'adult.nightclub,' +
+        'adult.casino,' +
+        'entertainment.nightclub';
+
+    } else if (category === 'sightseeing') {
+
+      categories =
+        'tourism.sights,' +
+        'tourism.attraction,' +
+        'tourism.information';
+
     }
 
-    if (search && search.trim()) {
-      const regex = new RegExp(search.trim(), 'i');
 
-      query.$or = [
-        { name: regex },
-        { location: regex },
-        { description: regex }
-      ];
+    // ------------------------------------------------
+    // SEARCH MODE
+    // ------------------------------------------------
+
+    if (search) {
+
+      const url =
+        `https://api.geoapify.com/v2/places` +
+        `?categories=${encodeURIComponent(categories)}` +
+        `&text=${encodeURIComponent(search)}` +
+        `&limit=${encodeURIComponent(limit)}` +
+        `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+
+      const response =
+        await fetch(url);
+
+      if (!response.ok) {
+
+        const errorText =
+          await response.text();
+
+        console.error(
+          'Geoapify search error:',
+          response.status,
+          errorText
+        );
+
+        return res.status(response.status).json({
+          message:
+            'Geoapify search failed',
+          status:
+            response.status,
+          details:
+            errorText
+        });
+      }
+
+      const data =
+        await response.json();
+
+      return res.json(data);
     }
 
-    const destinations = await Destination.find(query);
 
-    res.json(destinations);
+    // ------------------------------------------------
+    // NEARBY MODE
+    // ------------------------------------------------
+
+    const url =
+      `https://api.geoapify.com/v2/places` +
+      `?categories=${encodeURIComponent(categories)}` +
+      `&filter=circle:${lon},${lat},${radius}` +
+      `&limit=${encodeURIComponent(limit)}` +
+      `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+
+    const response =
+      await fetch(url);
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(
+        'Geoapify error:',
+        response.status,
+        errorText
+      );
+
+      return res.status(response.status).json({
+        message:
+          'Geoapify request failed',
+        status:
+          response.status,
+        details:
+          errorText
+      });
+    }
+
+    const data =
+      await response.json();
+
+    return res.json(data);
+
   } catch (error) {
-    console.error(error);
 
-    res.status(500).json({
-      message: 'Failed to load destinations'
+    console.error(
+      'Geoapify API error:',
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        'Failed to load places from Geoapify'
     });
   }
 });

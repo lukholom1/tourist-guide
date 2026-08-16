@@ -10,6 +10,7 @@ let currentCategory = 'all';
 let currentSearch = '';
 let showPinnedOnly = false;
 let latestDestinations = [];
+let databaseDestinations = [];
 
 const destinationsContainer = document.getElementById('destinations');
 const filterButtons = document.querySelectorAll('.filter-btn[data-category]');
@@ -531,8 +532,11 @@ async function loadDestinations() {
       );
     }
 
-    latestDestinations =
-      await response.json();
+      databaseDestinations =
+        await response.json();
+
+        latestDestinations =
+      databaseDestinations;
 
     renderDestinations();
 
@@ -961,6 +965,63 @@ surpriseBtn?.addEventListener(
 );
 
 // Fire a search request on every keystroke
+// ---------- Search ----------
+
+// Filter the destinations already loaded from MongoDB
+// while the user is typing. No API request is made.
+searchInput?.addEventListener(
+  'input',
+  (event) => {
+
+    currentSearch = event.target.value.trim();
+
+    const searchTerm =
+      currentSearch.toLowerCase();
+
+    // If search is empty, show the normal database results
+    if (!searchTerm) {
+      renderDestinations();
+      return;
+    }
+
+    // Filter the destinations already loaded from MongoDB
+    const filteredDestinations =
+      latestDestinations.filter((dest) => {
+
+        const name =
+          (dest.name || '').toLowerCase();
+
+        const location =
+          (dest.location || '').toLowerCase();
+
+        const description =
+          (dest.description || '').toLowerCase();
+
+        return (
+          name.includes(searchTerm) ||
+          location.includes(searchTerm) ||
+          description.includes(searchTerm)
+        );
+      });
+
+    // Temporarily render the filtered local results
+    const previousDestinations =
+      latestDestinations;
+
+    latestDestinations =
+      filteredDestinations;
+
+    renderDestinations();
+
+    // Restore the complete MongoDB result set
+    // so the next keystroke searches the full list.
+    latestDestinations =
+      previousDestinations;
+  }
+);
+
+
+// Press ENTER to perform an external Geoapify search
 searchInput?.addEventListener(
   'keydown',
   (event) => {
@@ -971,15 +1032,14 @@ searchInput?.addEventListener(
 
     event.preventDefault();
 
-    currentSearch =
-      event.target.value.trim();
+    const search =
+      searchInput.value.trim();
 
-    if (!currentSearch) {
-      loadDestinations();
+    if (!search) {
       return;
     }
 
-    searchGeoapifyPlaces(currentSearch);
+    searchGeoapifyPlaces(search);
   }
 );
 

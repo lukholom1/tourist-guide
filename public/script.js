@@ -332,30 +332,105 @@ async function getDestinationImage(query) {
   }
 }
 
-// ---------- Geoapify Places ----------
+// ---------- Search Geoapify ----------
 
-async function getGeoapifyPlaces() {
+async function searchGeoapifyPlaces(
+  search,
+  category = 'all'
+) {
+
   try {
-    const response = await fetch(
-      `${GEOAPIFY_API_URL}?lat=-33.9608&lon=25.6022`
+
+    destinationsContainer.innerHTML = `
+      <div class="empty-state">
+        <strong>Searching ${search}...</strong>
+        <span>Finding the best places for you.</span>
+      </div>
+    `;
+
+    const params =
+      new URLSearchParams();
+
+    params.set(
+      'search',
+      search
     );
 
-    if (!response.ok) {
-      throw new Error('Failed to load nearby places');
+    params.set(
+      'limit',
+      '10'
+    );
+
+    if (
+      category &&
+      category !== 'all'
+    ) {
+      params.set(
+        'category',
+        category
+      );
     }
 
-    const data = await response.json();
+    const response =
+      await fetch(
+        `${GEOAPIFY_API_URL}?${params.toString()}`
+      );
 
-    console.log('Geoapify places:', data);
+    if (!response.ok) {
+      throw new Error(
+        'Failed to search places'
+      );
+    }
 
-    return data.features || [];
+    const data =
+      await response.json();
+
+    const places =
+      data.features || [];
+
+    if (places.length === 0) {
+
+      destinationsContainer.innerHTML = `
+        <div class="empty-state">
+          <strong>No places found</strong>
+
+          <span>
+            Try another search or category.
+          </span>
+        </div>
+      `;
+
+      return;
+    }
+
+    const geoDestinations =
+      places
+        .slice(0, 10)
+        .map(convertGeoapifyPlace);
+
+    latestDestinations =
+      geoDestinations;
+
+    renderDestinations();
 
   } catch (error) {
-    console.error('Geoapify error:', error);
-    return [];
+
+    console.error(
+      'Geoapify search error:',
+      error
+    );
+
+    destinationsContainer.innerHTML = `
+      <div class="empty-state">
+        <strong>Search failed</strong>
+
+        <span>
+          ${error.message}
+        </span>
+      </div>
+    `;
   }
 }
-
 
 // ---------- Convert Geoapify place to destination ----------
 
@@ -967,26 +1042,34 @@ surpriseBtn?.addEventListener(
 // Fire a search request on every keystroke
 // ---------- Search ----------
 
-// Filter the destinations already loaded from MongoDB
-// while the user is typing. No API request is made.
+// ---------- Search ----------
+
+// Search the destinations already loaded from MongoDB
+// while the user types. No external API request is made.
 searchInput?.addEventListener(
   'input',
   (event) => {
 
-    currentSearch = event.target.value.trim();
+    currentSearch =
+      event.target.value.trim();
 
     const searchTerm =
       currentSearch.toLowerCase();
 
-    // If search is empty, show the normal database results
+    // Empty search = restore database results
     if (!searchTerm) {
+
+      latestDestinations =
+        databaseDestinations;
+
       renderDestinations();
+
       return;
     }
 
-    // Filter the destinations already loaded from MongoDB
+    // Search the existing MongoDB results
     const filteredDestinations =
-      latestDestinations.filter((dest) => {
+      databaseDestinations.filter((dest) => {
 
         const name =
           (dest.name || '').toLowerCase();
@@ -1004,24 +1087,16 @@ searchInput?.addEventListener(
         );
       });
 
-    // Temporarily render the filtered local results
-    const previousDestinations =
-      latestDestinations;
-
+    // Display the filtered local results
     latestDestinations =
       filteredDestinations;
 
     renderDestinations();
-
-    // Restore the complete MongoDB result set
-    // so the next keystroke searches the full list.
-    latestDestinations =
-      previousDestinations;
   }
 );
 
 
-// Press ENTER to perform an external Geoapify search
+// Press ENTER to search Geoapify
 searchInput?.addEventListener(
   'keydown',
   (event) => {
@@ -1039,10 +1114,12 @@ searchInput?.addEventListener(
       return;
     }
 
-    searchGeoapifyPlaces(search);
+    searchGeoapifyPlaces(
+      search,
+      currentCategory
+    );
   }
 );
-
 // Category filter buttons
 filterButtons.forEach(
   (button) => {

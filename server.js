@@ -102,7 +102,7 @@ app.get('/api/geoapify/places', async (req, res) => {
       lat = '-33.9608',
       lon = '25.6022',
       category = 'all',
-      limit = '20',
+      limit = '50',
       radius: radiusParam
     } = req.query;
 

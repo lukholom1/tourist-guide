@@ -709,9 +709,17 @@ async function searchGeoapifyPlaces(
       return;
     }
 
+    // Pass the active category filter through so
+    // results can fall back to it when Geoapify's
+    // own categories array doesn't clearly map to
+    // one of our three tag types.
     const geoDestinations =
       places.map(
-        convertGeoapifyPlace
+        (feature) =>
+          convertGeoapifyPlace(
+            feature,
+            category
+          )
       );
 
     latestDestinations =
@@ -751,8 +759,72 @@ async function searchGeoapifyPlaces(
 // CONVERT GEOAPIFY RESULT
 // ============================================================
 
+// Maps a Geoapify place onto one of our three card
+// categories (food / sightseeing / nightlife) by
+// reading the actual "categories" array Geoapify
+// returns for that place, rather than assuming
+// everything is "sightseeing".
+function mapGeoapifyCategory(
+  properties,
+  categoryHint = 'all'
+) {
+  const categoryList =
+    properties.categories ||
+    [];
+
+  const hasPrefix = (prefix) =>
+    categoryList.some(
+      (cat) =>
+        cat === prefix ||
+        cat.startsWith(
+          `${prefix}.`
+        )
+    );
+
+  if (
+    hasPrefix('catering') &&
+    !hasPrefix('catering.bar') &&
+    !hasPrefix('catering.pub')
+  ) {
+    return 'food';
+  }
+
+  if (
+    hasPrefix('adult') ||
+    hasPrefix('catering.bar') ||
+    hasPrefix('catering.pub')
+  ) {
+    return 'nightlife';
+  }
+
+  if (
+    hasPrefix('tourism') ||
+    hasPrefix('entertainment') ||
+    hasPrefix('natural') ||
+    hasPrefix('heritage')
+  ) {
+    return 'sightseeing';
+  }
+
+  // Geoapify's categories didn't clearly map to
+  // one of ours. If the user searched within a
+  // specific category, trust that (the backend
+  // already filtered by it). Otherwise default
+  // to sightseeing.
+  if (
+    categoryHint &&
+    categoryHint !== 'all'
+  ) {
+    return categoryHint;
+  }
+
+  return 'sightseeing';
+}
+
+
 function convertGeoapifyPlace(
-  feature
+  feature,
+  categoryHint = 'all'
 ) {
   const properties =
     feature.properties || {};
@@ -775,10 +847,10 @@ function convertGeoapifyPlace(
       'A place found through Geoapify.',
 
     category:
-      properties.category ===
-      'tourism.attraction'
-        ? 'sightseeing'
-        : 'sightseeing',
+      mapGeoapifyCategory(
+        properties,
+        categoryHint
+      ),
 
     location:
       properties.city &&

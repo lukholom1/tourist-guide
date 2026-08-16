@@ -11,6 +11,7 @@ let currentSearch = '';
 let showPinnedOnly = false;
 let latestDestinations = [];
 let databaseDestinations = [];
+let apiSearchActive = false;
 
 const destinationsContainer = document.getElementById('destinations');
 const filterButtons = document.querySelectorAll('.filter-btn[data-category]');
@@ -333,69 +334,47 @@ async function getDestinationImage(query) {
 }
 
 // ---------- Search Geoapify ----------
-
-async function searchGeoapifyPlaces(
-  search,
-  category = 'all'
-) {
-
+async function searchGeoapifyPlaces(search, category = 'all') {
   try {
-
     destinationsContainer.innerHTML = `
       <div class="empty-state">
-        <strong>Searching ${search}...</strong>
-        <span>Finding the best places for you.</span>
+        <strong>Searching...</strong>
+        <span>
+          Looking for ${category !== 'all' ? category + ' places in ' : ''}
+          "${search}"
+        </span>
       </div>
     `;
 
-    const params =
-      new URLSearchParams();
+    const params = new URLSearchParams();
 
-    params.set(
-      'search',
-      search
-    );
+    params.set('search', search);
 
-    params.set(
-      'limit',
-      '10'
-    );
-
-    if (
-      category &&
-      category !== 'all'
-    ) {
-      params.set(
-        'category',
-        category
-      );
+    if (category && category !== 'all') {
+      params.set('category', category);
     }
 
-    const response =
-      await fetch(
-        `${GEOAPIFY_API_URL}?${params.toString()}`
-      );
+    const response = await fetch(
+      `${GEOAPIFY_API_URL}?${params.toString()}`
+    );
 
     if (!response.ok) {
       throw new Error(
-        'Failed to search places'
+        `Geoapify returned ${response.status}`
       );
     }
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
-    const places =
-      data.features || [];
+    const places = data.features || [];
 
     if (places.length === 0) {
-
       destinationsContainer.innerHTML = `
         <div class="empty-state">
           <strong>No places found</strong>
-
           <span>
-            Try another search or category.
+            No ${category !== 'all' ? category : ''} places
+            were found for "${search}".
           </span>
         </div>
       `;
@@ -404,17 +383,13 @@ async function searchGeoapifyPlaces(
     }
 
     const geoDestinations =
-      places
-        .slice(0, 10)
-        .map(convertGeoapifyPlace);
+      places.map(convertGeoapifyPlace);
 
-    latestDestinations =
-      geoDestinations;
+    latestDestinations = geoDestinations;
 
     renderDestinations();
 
   } catch (error) {
-
     console.error(
       'Geoapify search error:',
       error
@@ -423,10 +398,7 @@ async function searchGeoapifyPlaces(
     destinationsContainer.innerHTML = `
       <div class="empty-state">
         <strong>Search failed</strong>
-
-        <span>
-          ${error.message}
-        </span>
+        <span>${error.message}</span>
       </div>
     `;
   }
@@ -1041,9 +1013,6 @@ surpriseBtn?.addEventListener(
 
 // Fire a search request on every keystroke
 // ---------- Search ----------
-
-// ---------- Search ----------
-
 // Search the destinations already loaded from MongoDB
 // while the user types. No external API request is made.
 searchInput?.addEventListener(

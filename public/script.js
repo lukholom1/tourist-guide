@@ -369,14 +369,32 @@ function burstConfetti(
 // ============================================================
 
 async function getWeather(
-  location
+  location,
+  lat,
+  lon
 ) {
   try {
+    const params =
+      new URLSearchParams();
+
+    // Prefer coordinates when we have them —
+    // sidesteps city-name mismatches like
+    // Gqeberha vs. Port Elizabeth entirely.
+    if (
+      lat !== undefined &&
+      lon !== undefined &&
+      lat !== null &&
+      lon !== null
+    ) {
+      params.set('lat', lat);
+      params.set('lon', lon);
+    } else {
+      params.set('location', location);
+    }
+
     const response =
       await fetch(
-        `${WEATHER_API_URL}?location=${encodeURIComponent(
-          location
-        )}`
+        `${WEATHER_API_URL}?${params.toString()}`
       );
 
     if (!response.ok) {
@@ -444,7 +462,9 @@ async function loadWeatherForCards(
 
           const weather =
             await getWeather(
-              dest.location
+              dest.location,
+              dest.lat,
+              dest.lon
             );
 
           return {

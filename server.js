@@ -406,20 +406,55 @@ app.post('/api/destinations/:id/vote', async (req, res) => {
   }
 });
 
+// Some cities have been officially renamed and aren't
+// always recognised by OpenWeatherMap's name lookup yet.
+// Map them to the name OpenWeatherMap does recognise.
+const CITY_ALIASES = {
+  gqeberha: 'Port Elizabeth'
+};
+
 // Get current weather for a destination
 app.get('/api/weather', async (req, res) => {
   try {
-    const { location } = req.query;
+    const { location, lat, lon } = req.query;
 
-    if (!location) {
+    if (!location && !(lat && lon)) {
       return res.status(400).json({
-        message: 'Location is required'
+        message: 'Location or coordinates are required'
       });
     }
 
-    const weatherResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`
-    );
+    let weatherUrl;
+
+    if (lat && lon) {
+      // Coordinates sidestep city-name ambiguity
+      // entirely, so prefer these when available.
+      weatherUrl =
+        `https://api.openweathermap.org/data/2.5/weather` +
+        `?lat=${encodeURIComponent(lat)}` +
+        `&lon=${encodeURIComponent(lon)}` +
+        `&appid=${process.env.OPENWEATHER_API_KEY}` +
+        `&units=metric`;
+    } else {
+      const [rawCity, ...rest] =
+        location.split(',').map((part) => part.trim());
+
+      const normalizedCity =
+        CITY_ALIASES[rawCity.toLowerCase()] || rawCity;
+
+      const queryLocation =
+        rest.length
+          ? `${normalizedCity}, ${rest.join(', ')}`
+          : normalizedCity;
+
+      weatherUrl =
+        `https://api.openweathermap.org/data/2.5/weather` +
+        `?q=${encodeURIComponent(queryLocation)}` +
+        `&appid=${process.env.OPENWEATHER_API_KEY}` +
+        `&units=metric`;
+    }
+
+    const weatherResponse = await fetch(weatherUrl);
 
     if (!weatherResponse.ok) {
       return res.status(weatherResponse.status).json({

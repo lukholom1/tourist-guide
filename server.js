@@ -102,10 +102,17 @@ app.get('/api/geoapify/places', async (req, res) => {
       lat = '-33.9608',
       lon = '25.6022',
       category = 'all',
-      limit = '10'
+      limit = '10',
+      radius: radiusParam
     } = req.query;
 
-    const radius = 5000;
+    // Wider default radius so a city-name search
+    // (e.g. "London") pulls in more than just the
+    // handful of spots right at the city center.
+    // Overridable via ?radius=<meters> if needed.
+    const radius = radiusParam
+      ? Number(radiusParam)
+      : 20000;
 
     let categories =
       'tourism.sights,tourism.attraction';
@@ -140,18 +147,72 @@ app.get('/api/geoapify/places', async (req, res) => {
     // ------------------------------------------------
     // SEARCH MODE
     // ------------------------------------------------
+    //
+    // v2/places has no "text" parameter — it only
+    // understands categories + a location filter.
+    // So a text search like "London" has to be
+    // geocoded into coordinates first, then those
+    // coordinates are used as the filter for Places.
 
     if (search) {
 
-      const url =
+      const geocodeUrl =
+        `https://api.geoapify.com/v1/geocode/search` +
+        `?text=${encodeURIComponent(search)}` +
+        `&limit=1` +
+        `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
+
+      const geocodeResponse =
+        await fetch(geocodeUrl);
+
+      if (!geocodeResponse.ok) {
+
+        const errorText =
+          await geocodeResponse.text();
+
+        console.error(
+          'Geoapify geocode error:',
+          geocodeResponse.status,
+          errorText
+        );
+
+        return res.status(geocodeResponse.status).json({
+          message:
+            'Geoapify geocoding failed',
+          status:
+            geocodeResponse.status,
+          details:
+            errorText
+        });
+      }
+
+      const geocodeData =
+        await geocodeResponse.json();
+
+      const match =
+        geocodeData.features &&
+        geocodeData.features[0];
+
+      if (!match) {
+        // Nothing matched the search term at all
+        return res.json({
+          type: 'FeatureCollection',
+          features: []
+        });
+      }
+
+      const [searchLon, searchLat] =
+        match.geometry.coordinates;
+
+      const placesUrl =
         `https://api.geoapify.com/v2/places` +
         `?categories=${encodeURIComponent(categories)}` +
-        `&text=${encodeURIComponent(search)}` +
+        `&filter=circle:${searchLon},${searchLat},${radius}` +
         `&limit=${encodeURIComponent(limit)}` +
         `&apiKey=${process.env.GEOAPIFY_API_KEY}`;
 
       const response =
-        await fetch(url);
+        await fetch(placesUrl);
 
       if (!response.ok) {
 
